@@ -2,7 +2,7 @@
   "name": "Rezeptbibliothek",
   "short_name": "Rezepte",
   "description": "Deine persönliche Rezeptbibliothek mit Wochenplaner",
-  "start_url": "/",
+  "start_url": "/RecipeMaster/",
   "display": "standalone",
   "background_color": "#0f0f1a",
   "theme_color": "#1a1a2e",
