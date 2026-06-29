@@ -331,7 +331,7 @@
 <!-- ══ SCRIPTS ════════════════════════════════════════════ -->
 <script>
 // ── PROXY URL – nach Vercel-Deploy hier eintragen ─────────
-window.PROXY_URL = 'https://recipe-master-nine.vercel.app/api/claude';
+const PROXY_URL = 'https://recipe-master-nine.vercel.app/api/claude';
 // e.g. 'https://rezept-proxy.vercel.app/api/claude'
 
 // ── LOGIN ─────────────────────────────────────────────────
@@ -571,43 +571,6 @@ window.importFromUrl=async function(){
     statusDiv.innerHTML='<div class="status-msg success">✓ Rezept erfolgreich importiert!</div>';
     setTimeout(()=>{closeModal('add-modal');document.getElementById('recipe-url').value='';},1200);
   }catch(e){console.error(e);statusDiv.innerHTML='<div class="status-msg error">⚠ '+e.message+'</div>';}
-};
-window.saveManual=async function(){
-  const name=document.getElementById('m-name').value.trim(); if(!name){alert('Bitte einen Namen eingeben.');return;}
-  const cat=document.getElementById('m-category').value;
-  setSyncStatus('syncing','Wird gespeichert…');
-  try{
-    await addDoc(collection(db,'recipes'),{name,category:cat,description:document.getElementById('m-desc').value.trim(),ingredients:[...currentIngredients],steps:document.getElementById('m-steps').value.split('\n').map(s=>s.trim()).filter(Boolean),time:document.getElementById('m-time').value.trim(),servings:document.getElementById('m-servings').value.trim(),emoji:CATS[cat]?.emoji||'🍽️',source:null,createdAt:Date.now()});
-    closeModal('add-modal'); ['m-name','m-desc','m-steps','m-time','m-servings'].forEach(id=>document.getElementById(id).value=''); currentIngredients=[];
-  }catch(e){setSyncStatus('error','Fehler');alert('Speichern fehlgeschlagen.');}
-};
-window.importFromUrl=async function(){
-  const url=document.getElementById('recipe-url').value.trim(); if(!url){alert('Bitte eine URL eingeben.');return;}
-  const statusDiv=document.getElementById('import-status');
-  statusDiv.innerHTML='<div class="loading-bar"></div><div class="status-msg">Rezept wird analysiert…</div>';
-  try{
-    const proxyUrl=window.PROXY_URL||'DEINE_VERCEL_URL/api/claude';
-    const response=await fetch(proxyUrl,{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,messages:[{role:'user',content:`Besuche diese Rezept-URL und extrahiere alle Informationen: ${url}
-
-Die Seite ist erreichbar unter: ${url}
-
-Analysiere die URL und den Seitennamen um das Rezept zu identifizieren. Antworte NUR mit diesem JSON-Format ohne Markdown:
-{"name":"Rezeptname","category":"vegan|vegetarisch|fleisch|suess","description":"Kurze Beschreibung","ingredients":["200g Zutat 1","1 EL Zutat 2"],"steps":["Schritt 1","Schritt 2"],"time":"30 Minuten","servings":"4","emoji":"🍝"}
-
-Kategorien: vegan=keine tierischen Produkte, vegetarisch=kein Fleisch/Fisch aber Eier/Milch ok, fleisch=Fleisch oder Fisch, suess=Desserts/Kuchen/Süßspeisen.
-Nur reines JSON zurückgeben, kein Markdown, keine Erklärung.`}]})
-    });
-    const data=await response.json();
-    const text=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
-    const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
-    if(!parsed.name||!parsed.category) throw new Error('Ungültiges Format');
-    setSyncStatus('syncing','Wird gespeichert…');
-    await addDoc(collection(db,'recipes'),{name:parsed.name,category:parsed.category,description:parsed.description||'',ingredients:parsed.ingredients||[],steps:parsed.steps||[],time:parsed.time||'',servings:parsed.servings||'',emoji:parsed.emoji||CATS[parsed.category]?.emoji||'🍽️',source:url,createdAt:Date.now()});
-    statusDiv.innerHTML='<div class="status-msg success">✓ Rezept erfolgreich importiert!</div>';
-    setTimeout(()=>{closeModal('add-modal');document.getElementById('recipe-url').value='';},1200);
-  }catch(e){console.error(e);statusDiv.innerHTML='<div class="status-msg error">⚠ Import fehlgeschlagen. URL prüfen oder manuell eingeben.</div>';}
 };
 </script>
 </body>
