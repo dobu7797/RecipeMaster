@@ -297,6 +297,7 @@
           </div>
           <div id="import-status"></div>
           <button class="btn btn-primary" onclick="importFromUrl()"><i class="ti ti-wand"></i> Mit KI importieren</button>
+        <button class="btn btn-secondary" onclick="debugProxy()" style="margin-top:8px;font-size:12px">🔧 Verbindung testen</button>
         </div>
         <div id="tab-manual" style="display:none">
           <div class="form-group"><label class="form-label">Rezeptname</label><input class="form-input" id="m-name" type="text" placeholder="Spaghetti Carbonara"></div>
@@ -575,6 +576,24 @@ window.importFromUrl=async function(){
     statusDiv.innerHTML='<div class="status-msg success">✓ Rezept erfolgreich importiert!</div>';
     setTimeout(()=>{closeModal('add-modal');document.getElementById('recipe-url').value='';},1200);
   }catch(e){console.error(e);statusDiv.innerHTML='<div class="status-msg error">⚠ Import fehlgeschlagen. URL prüfen oder manuell eingeben.</div>';}
+};
+
+window.debugProxy = async function() {
+  const proxyUrl = window.PROXY_URL || 'nicht gesetzt';
+  let msg = 'PROXY_URL: ' + proxyUrl + '\n\n';
+  try {
+    const r = await fetch(proxyUrl, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({url: 'https://www.chefkoch.de/rezepte/220931092124800/Spaghetti-Carbonara.html'})
+    });
+    msg += 'Status: ' + r.status + '\n';
+    const text = await r.text();
+    msg += 'Antwort: ' + text.substring(0, 200);
+  } catch(e) {
+    msg += 'Fehler: ' + e.message;
+  }
+  alert(msg);
 };
 </script>
 </body>
