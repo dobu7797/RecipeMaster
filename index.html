@@ -560,23 +560,20 @@ window.saveManual=async function(){
 window.importFromUrl=async function(){
   const url=document.getElementById('recipe-url').value.trim(); if(!url){alert('Bitte eine URL eingeben.');return;}
   const statusDiv=document.getElementById('import-status');
-  statusDiv.innerHTML='<div class="loading-bar"></div><div class="status-msg">Rezept wird analysiert…</div>';
+  statusDiv.innerHTML='<div class="loading-bar"></div><div class="status-msg">Rezept wird importiert…</div>';
   try{
     const proxyUrl=window.PROXY_URL||'DEINE_VERCEL_URL/api/claude';
-    const response=await fetch(proxyUrl,{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,tools:[{type:'web_search_20250305',name:'web_search'}],messages:[{role:'user',content:`Rufe die Rezeptseite unter dieser URL ab: ${url}\n\nAntworte NUR mit JSON:\n{"name":"...","category":"vegan|vegetarisch|fleisch|suess","description":"...","ingredients":["..."],"steps":["..."],"time":"...","servings":"...","emoji":"..."}\n\nKategorien: vegan=keine tierischen Produkte, vegetarisch=kein Fleisch/Fisch, fleisch=Fleisch/Fisch, suess=Desserts/Kuchen/Nachspeisen. Nur JSON, kein Markdown.`}]})
-    });
-    const data=await response.json();
-    const text=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
-    const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
+    const response=await fetch(proxyUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+    const parsed=await response.json();
+    if(!response.ok) throw new Error(parsed.error||'Fehler beim Import');
     if(!parsed.name||!parsed.category) throw new Error('Ungültiges Format');
     setSyncStatus('syncing','Wird gespeichert…');
     await addDoc(collection(db,'recipes'),{name:parsed.name,category:parsed.category,description:parsed.description||'',ingredients:parsed.ingredients||[],steps:parsed.steps||[],time:parsed.time||'',servings:parsed.servings||'',emoji:parsed.emoji||CATS[parsed.category]?.emoji||'🍽️',source:url,createdAt:Date.now()});
     statusDiv.innerHTML='<div class="status-msg success">✓ Rezept erfolgreich importiert!</div>';
     setTimeout(()=>{closeModal('add-modal');document.getElementById('recipe-url').value='';},1200);
-  }catch(e){console.error(e);statusDiv.innerHTML='<div class="status-msg error">⚠ Import fehlgeschlagen. URL prüfen oder manuell eingeben.</div>';}
+  }catch(e){console.error(e);statusDiv.innerHTML='<div class="status-msg error">⚠ '+e.message+'</div>';}
 };
+
 
 window.debugProxy = async function() {
   const proxyUrl = window.PROXY_URL || 'nicht gesetzt';
