@@ -393,7 +393,7 @@ window.PROXY_URL = 'https://recipe-master-nine.vercel.app/api/claude';
 // e.g. 'https://rezept-proxy.vercel.app/api/claude'
 
 // ── LOGIN ─────────────────────────────────────────────────
-const CREDENTIALS = { user: 'admin', pass: 'IchMagZuege97!' };
+const CREDENTIALS = { user: 'admin', pass: 'Rezepte123' };
 const SESSION_KEY = 'rm_session';
 
 function checkSession() {
@@ -489,7 +489,7 @@ async function saveWeekPlan() {
   try{ await setDoc(doc(db,'meta','weekPlan'),weekPlan); }catch(e){}
 }
 
-window.showPage = function(name) {
+window.showPage = function(name, fromHistory) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
@@ -499,8 +499,9 @@ window.showPage = function(name) {
   if(name==='planner') renderPlanner();
   if(name==='shopping') renderShoppingList();
   previousPage=name;
+  if(!fromHistory) history.pushState({view:name}, '', '#'+name);
 };
-window.showDetail = function(id) {
+window.showDetail = function(id, fromHistory) {
   const r=recipes.find(x=>x.id===id); if(!r) return;
   previousPage=document.querySelector('.page.active').id.replace('page-','');
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -508,8 +509,33 @@ window.showDetail = function(id) {
   document.getElementById('fab').style.display='none';
   document.getElementById('page-detail').classList.add('active');
   renderDetail(r);
+  if(!fromHistory) history.pushState({view:'detail', id, from:previousPage}, '', '#recipe-'+id);
 };
-window.goBack=()=>showPage(previousPage||'library');
+window.goBack=()=>{ history.back(); };
+
+// Handle Android back gesture / browser back button
+window.addEventListener('popstate', (e) => {
+  const state = e.state;
+  // Close any open modal first
+  const openModal = document.querySelector('.modal-overlay.open');
+  if(openModal && (!state || state.view !== 'modal')){
+    openModal.classList.remove('open');
+    currentIngredients = [];
+  }
+  if(!state){
+    showPage('library', true);
+    return;
+  }
+  if(state.view === 'modal') return; // modal already shown, nothing else to do
+  if(state.view === 'detail' && state.id){
+    previousPage = state.from || 'library';
+    showDetail(state.id, true);
+  } else {
+    showPage(state.view || 'library', true);
+  }
+});
+// Set initial history state
+if(!history.state) history.replaceState({view:'library'}, '', '#library');
 
 function renderDetail(r) {
   const cat=CATS[r.category]||{label:r.category,badge:'',emoji:'🍽️'};
@@ -645,8 +671,8 @@ function renderShoppingList(){
   const unc=shoppingItems.filter(i=>!i.checked),chk=shoppingItems.filter(i=>i.checked);
   container.innerHTML=`<div class="shopping-progress"><div class="shopping-progress-bar" style="width:${pct}%"></div></div><div class="shopping-stats"><span>${done} von ${total} erledigt</span>${done>0?`<span onclick="clearCheckedItems()" style="color:var(--accent);cursor:pointer">Erledigte entfernen</span>`:''}</div><div class="shopping-add-row"><input class="form-input" id="shopping-manual-input" placeholder="Artikel hinzufügen…" onkeydown="if(event.key==='Enter')addManualShoppingItem()"><button onclick="addManualShoppingItem()">+</button></div>${unc.length?`<div class="shopping-category">Noch zu kaufen</div>${unc.map(renderItem).join('')}`:''}${chk.length?`<div class="shopping-category" style="margin-top:8px">Erledigt</div>${chk.map(renderItem).join('')}`:''}`;
 }
-window.openAddModal=function(){ document.getElementById('add-modal').classList.add('open'); document.getElementById('recipe-url').value=''; document.getElementById('import-status').innerHTML=''; };
-window.closeModal=function(id){ document.getElementById(id).classList.remove('open'); currentIngredients=[]; renderIngredientTags(); };
+window.openAddModal=function(){ document.getElementById('add-modal').classList.add('open'); document.getElementById('recipe-url').value=''; document.getElementById('import-status').innerHTML=''; history.pushState({view:'modal',id:'add-modal'}, '', '#add'); };
+window.closeModal=function(id, fromHistory){ document.getElementById(id).classList.remove('open'); currentIngredients=[]; renderIngredientTags(); if(!fromHistory && history.state && history.state.view==='modal') history.back(); };
 window.setTab=function(tab,btn){ document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); document.getElementById('tab-link').style.display=tab==='link'?'block':'none'; document.getElementById('tab-manual').style.display=tab==='manual'?'block':'none'; };
 window.addIngredient=function(){ const inp=document.getElementById('ingredient-input'),val=inp.value.trim(); if(val){currentIngredients.push(val);inp.value='';renderIngredientTags();} };
 window.removeIngredient=function(i){ currentIngredients.splice(i,1); renderIngredientTags(); };
@@ -714,6 +740,7 @@ window.openEditModal = function(id) {
   editIngredients = [...(r.ingredients||[])];
   renderEditIngredientTags();
   document.getElementById('edit-modal').classList.add('open');
+  history.pushState({view:'modal',id:'edit-modal'}, '', '#edit');
 };
 
 window.addEditIngredient = function() {
