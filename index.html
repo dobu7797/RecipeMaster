@@ -89,6 +89,14 @@
   .badge-suess{background:var(--pink-bg);color:var(--pink);border:1px solid var(--pink-border);}
   .filter-bar{display:flex;gap:8px;padding:10px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
   .filter-bar::-webkit-scrollbar{display:none;}
+  .search-sort-row{display:flex;gap:8px;padding:10px 12px 0;}
+  .search-input-wrap{flex:1;position:relative;display:flex;align-items:center;}
+  .search-icon{position:absolute;left:12px;color:var(--text-muted);font-size:17px;pointer-events:none;}
+  .search-input{width:100%;background:var(--surface2);border:1px solid var(--border-strong);border-radius:var(--radius-sm);color:var(--text);font-size:15px;padding:10px 36px 10px 36px;outline:none;font-family:inherit;transition:border-color 0.2s;}
+  .search-input:focus{border-color:var(--accent-border);}
+  .search-clear{position:absolute;right:8px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:4px;}
+  .sort-select{background:var(--surface2);border:1px solid var(--border-strong);border-radius:var(--radius-sm);color:var(--text);font-size:13px;padding:10px 8px;outline:none;font-family:inherit;flex-shrink:0;max-width:135px;}
+  .sort-select option{background:var(--surface2);}
   .filter-chip{flex-shrink:0;padding:6px 14px;border-radius:99px;border:1px solid var(--border-strong);background:none;color:var(--text-secondary);font-size:13px;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
   .filter-chip.active{background:var(--accent-light);border-color:var(--accent-border);color:var(--accent);}
   .empty-state{text-align:center;padding:60px 24px;color:var(--text-muted);}
@@ -226,6 +234,19 @@
         <button class="logout-btn" onclick="doLogout()" title="Abmelden"><i class="ti ti-logout"></i></button>
       </div>
     </div>
+    <div class="search-sort-row">
+      <div class="search-input-wrap">
+        <i class="ti ti-search search-icon"></i>
+        <input class="search-input" id="recipe-search" type="text" placeholder="Rezept suchen…" oninput="onSearchInput()">
+        <button class="search-clear" id="search-clear" onclick="clearSearch()" style="display:none"><i class="ti ti-x"></i></button>
+      </div>
+      <select class="sort-select" id="sort-select" onchange="onSortChange()">
+        <option value="newest">Neueste zuerst</option>
+        <option value="oldest">Älteste zuerst</option>
+        <option value="az">A–Z</option>
+        <option value="za">Z–A</option>
+      </select>
+    </div>
     <div class="filter-bar">
       <button class="filter-chip active" onclick="setFilter('alle',this)">Alle</button>
       <button class="filter-chip" onclick="setFilter('vegan',this)">🌱 Vegan</button>
@@ -245,11 +266,11 @@
     </div>
     <div class="week-header">
       <div class="week-filter" id="week-filter">
-        <button class="filter-chip active" onclick="setWeekFilter('alle',this)">Alle</button>
-        <button class="filter-chip" onclick="setWeekFilter('vegan',this)">🌱 Vegan</button>
-        <button class="filter-chip" onclick="setWeekFilter('vegetarisch',this)">🥗 Vegetarisch</button>
-        <button class="filter-chip" onclick="setWeekFilter('fleisch',this)">🥩 Fleisch</button>
-        <button class="filter-chip" onclick="setWeekFilter('suess',this)">🍰 Süßes</button>
+        <button class="filter-chip active" onclick="toggleWeekFilter('alle',this)">Alle</button>
+        <button class="filter-chip" onclick="toggleWeekFilter('vegan',this)">🌱 Vegan</button>
+        <button class="filter-chip" onclick="toggleWeekFilter('vegetarisch',this)">🥗 Vegetarisch</button>
+        <button class="filter-chip" onclick="toggleWeekFilter('fleisch',this)">🥩 Fleisch</button>
+        <button class="filter-chip" onclick="toggleWeekFilter('suess',this)">🍰 Süßes</button>
       </div>
       <div class="week-actions">
         <button class="btn btn-primary" onclick="generateWeekPlan()"><i class="ti ti-shuffle"></i> Zufällig generieren</button>
@@ -297,7 +318,6 @@
           </div>
           <div id="import-status"></div>
           <button class="btn btn-primary" onclick="importFromUrl()"><i class="ti ti-wand"></i> Mit KI importieren</button>
-        <button class="btn btn-secondary" onclick="debugProxy()" style="margin-top:8px;font-size:12px">🔧 Verbindung testen</button>
         </div>
         <div id="tab-manual" style="display:none">
           <div class="form-group"><label class="form-label">Rezeptname</label><input class="form-input" id="m-name" type="text" placeholder="Spaghetti Carbonara"></div>
@@ -324,6 +344,43 @@
           <div class="form-group"><label class="form-label">Portionen</label><input class="form-input" id="m-servings" type="text" placeholder="4"></div>
           <button class="btn btn-primary" onclick="saveManual()" style="margin-top:4px"><i class="ti ti-check"></i> Rezept speichern</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT MODAL -->
+  <div class="modal-overlay" id="edit-modal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <div class="modal-title">Rezept bearbeiten</div>
+        <button class="modal-close" onclick="closeModal('edit-modal')"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="e-id">
+        <div class="form-group"><label class="form-label">Rezeptname</label><input class="form-input" id="e-name" type="text"></div>
+        <div class="form-group">
+          <label class="form-label">Kategorie</label>
+          <select class="form-select" id="e-category">
+            <option value="fleisch">🥩 Fleisch / Fisch</option>
+            <option value="vegetarisch">🥗 Vegetarisch</option>
+            <option value="vegan">🌱 Vegan</option>
+            <option value="suess">🍰 Süßes</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Beschreibung</label><textarea class="form-textarea" id="e-desc"></textarea></div>
+        <div class="form-group">
+          <label class="form-label">Zutaten</label>
+          <div class="ingredient-tags" id="e-ingredient-tags"></div>
+          <div class="ingredient-input-row">
+            <input class="form-input" id="e-ingredient-input" placeholder="Zutat hinzufügen…" onkeydown="if(event.key==='Enter'){addEditIngredient();event.preventDefault();}">
+            <button class="add-ingredient-btn" onclick="addEditIngredient()">+</button>
+          </div>
+        </div>
+        <div class="form-group"><label class="form-label">Zubereitung (ein Schritt pro Zeile)</label><textarea class="form-textarea" id="e-steps" style="height:120px"></textarea></div>
+        <div class="form-group"><label class="form-label">Kochzeit</label><input class="form-input" id="e-time" type="text" placeholder="30 Minuten"></div>
+        <div class="form-group"><label class="form-label">Portionen</label><input class="form-input" id="e-servings" type="text" placeholder="4"></div>
+        <button class="btn btn-primary" onclick="saveEdit()"><i class="ti ti-check"></i> Änderungen speichern</button>
       </div>
     </div>
   </div>
@@ -380,7 +437,7 @@ if(checkSession()) {
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDzeCdYY5eriJh78j2IIn7MzToJW06zifs",
@@ -403,7 +460,8 @@ const CATS = {
 const DAYS = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
 
 let recipes = [], weekPlan = {}, shoppingItems = JSON.parse(localStorage.getItem('shoppingItems')||'[]');
-let currentFilter='alle', weekFilter='alle', currentIngredients=[], previousPage='library';
+let currentFilter='alle', currentIngredients=[], previousPage='library';
+let searchQuery='', sortMode='newest';
 
 window.initApp = function() {
   setSyncStatus('syncing','Verbinde…');
@@ -477,7 +535,10 @@ function renderDetail(r) {
       <div class="detail-section"><div class="detail-section-title">Zutaten</div>${ingHtml}</div>
       <div class="detail-section"><div class="detail-section-title">Zubereitung</div>${stepsHtml}</div>
     </div>
-    <div class="detail-actions"><button class="btn btn-danger" onclick="deleteRecipe('${r.id}')"><i class="ti ti-trash"></i> Löschen</button></div>`;
+    <div class="detail-actions">
+      <button class="btn btn-secondary" onclick="openEditModal('${r.id}')"><i class="ti ti-edit"></i> Bearbeiten</button>
+      <button class="btn btn-danger" onclick="deleteRecipe('${r.id}')"><i class="ti ti-trash"></i> Löschen</button>
+    </div>`;
 }
 window.deleteRecipe=async function(id){
   if(!confirm('Rezept löschen?')) return;
@@ -486,16 +547,58 @@ window.deleteRecipe=async function(id){
   catch(e){ setSyncStatus('error','Fehler'); alert('Löschen fehlgeschlagen.'); }
 };
 window.setFilter=function(f,btn){ currentFilter=f; document.querySelectorAll('.filter-bar .filter-chip').forEach(c=>c.classList.remove('active')); btn.classList.add('active'); renderLibrary(); };
+window.onSearchInput=function(){
+  searchQuery = document.getElementById('recipe-search').value.trim().toLowerCase();
+  document.getElementById('search-clear').style.display = searchQuery ? 'flex' : 'none';
+  renderLibrary();
+};
+window.clearSearch=function(){
+  document.getElementById('recipe-search').value='';
+  searchQuery='';
+  document.getElementById('search-clear').style.display='none';
+  renderLibrary();
+};
+window.onSortChange=function(){
+  sortMode = document.getElementById('sort-select').value;
+  renderLibrary();
+};
 function renderLibrary(){
-  const filtered=currentFilter==='alle'?recipes:recipes.filter(r=>r.category===currentFilter);
+  let filtered=currentFilter==='alle'?[...recipes]:recipes.filter(r=>r.category===currentFilter);
+  if(searchQuery){
+    filtered = filtered.filter(r => {
+      const haystack = [r.name, r.description, ...(r.ingredients||[])].join(' ').toLowerCase();
+      return haystack.includes(searchQuery);
+    });
+  }
+  if(sortMode==='az') filtered.sort((a,b)=>(a.name||'').localeCompare(b.name||'','de'));
+  else if(sortMode==='za') filtered.sort((a,b)=>(b.name||'').localeCompare(a.name||'','de'));
+  else if(sortMode==='oldest') filtered.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+  else filtered.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)); // newest default
+
   document.getElementById('recipe-count').textContent=`${recipes.length} Rezept${recipes.length!==1?'e':''}`;
   const grid=document.getElementById('recipe-grid');
-  if(!filtered.length){ grid.innerHTML=`<div class="empty-state"><i class="ti ti-chef-hat"></i><p>${recipes.length===0?'Noch keine Rezepte. Füge dein erstes hinzu!':'Keine Rezepte in dieser Kategorie.'}</p></div>`; return; }
+  if(!filtered.length){
+    const msg = searchQuery ? `Keine Rezepte für "${searchQuery}" gefunden.` : (recipes.length===0?'Noch keine Rezepte. Füge dein erstes hinzu!':'Keine Rezepte in dieser Kategorie.');
+    grid.innerHTML=`<div class="empty-state"><i class="ti ti-chef-hat"></i><p>${msg}</p></div>`; return;
+  }
   grid.innerHTML=filtered.map(r=>{const cat=CATS[r.category]||{label:r.category,badge:'',emoji:'🍽️'};return`<div class="recipe-card" onclick="showDetail('${r.id}')"><div class="recipe-emoji">${r.emoji||cat.emoji}</div><div class="recipe-info"><div class="recipe-name">${r.name}</div><div class="recipe-meta"><span class="badge ${cat.badge}">${cat.label}</span>${r.time?`<span style="color:var(--text-muted)">⏱ ${r.time}</span>`:''}</div></div><i class="ti ti-chevron-right" style="color:var(--text-muted)"></i></div>`;}).join('');
 }
-window.setWeekFilter=function(f,btn){ weekFilter=f; document.querySelectorAll('#week-filter .filter-chip').forEach(c=>c.classList.remove('active')); btn.classList.add('active'); };
+let weekFilters = new Set(['alle']);
+window.toggleWeekFilter=function(f,btn){
+  if(f==='alle'){
+    weekFilters=new Set(['alle']);
+    document.querySelectorAll('#week-filter .filter-chip').forEach(c=>c.classList.remove('active'));
+    btn.classList.add('active');
+  } else {
+    weekFilters.delete('alle');
+    document.getElementById('week-filter').querySelector('[onclick*="alle"]').classList.remove('active');
+    if(weekFilters.has(f)){ weekFilters.delete(f); btn.classList.remove('active'); }
+    else { weekFilters.add(f); btn.classList.add('active'); }
+    if(weekFilters.size===0){ weekFilters.add('alle'); document.getElementById('week-filter').querySelector('[onclick*="alle"]').classList.add('active'); }
+  }
+};
 window.generateWeekPlan=async function(){
-  const pool=weekFilter==='alle'?recipes:recipes.filter(r=>r.category===weekFilter);
+  const pool=weekFilters.has('alle')?recipes:recipes.filter(r=>weekFilters.has(r.category));
   if(!pool.length){ alert('Keine Rezepte in dieser Kategorie.'); return; }
   const shuffled=[...pool].sort(()=>Math.random()-0.5);
   weekPlan={}; DAYS.forEach((d,i)=>{ weekPlan[d]=shuffled[i%shuffled.length].id; });
@@ -560,20 +663,23 @@ window.saveManual=async function(){
 window.importFromUrl=async function(){
   const url=document.getElementById('recipe-url').value.trim(); if(!url){alert('Bitte eine URL eingeben.');return;}
   const statusDiv=document.getElementById('import-status');
-  statusDiv.innerHTML='<div class="loading-bar"></div><div class="status-msg">Rezept wird importiert…</div>';
+  statusDiv.innerHTML='<div class="loading-bar"></div><div class="status-msg">Rezept wird analysiert…</div>';
   try{
     const proxyUrl=window.PROXY_URL||'DEINE_VERCEL_URL/api/claude';
-    const response=await fetch(proxyUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
-    const parsed=await response.json();
-    if(!response.ok) throw new Error(parsed.error||'Fehler beim Import');
+    const response=await fetch(proxyUrl,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,tools:[{type:'web_search_20250305',name:'web_search'}],messages:[{role:'user',content:`Rufe die Rezeptseite unter dieser URL ab: ${url}\n\nAntworte NUR mit JSON:\n{"name":"...","category":"vegan|vegetarisch|fleisch|suess","description":"...","ingredients":["..."],"steps":["..."],"time":"...","servings":"...","emoji":"..."}\n\nKategorien: vegan=keine tierischen Produkte, vegetarisch=kein Fleisch/Fisch, fleisch=Fleisch/Fisch, suess=Desserts/Kuchen/Nachspeisen. Nur JSON, kein Markdown.`}]})
+    });
+    const data=await response.json();
+    const text=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+    const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
     if(!parsed.name||!parsed.category) throw new Error('Ungültiges Format');
     setSyncStatus('syncing','Wird gespeichert…');
     await addDoc(collection(db,'recipes'),{name:parsed.name,category:parsed.category,description:parsed.description||'',ingredients:parsed.ingredients||[],steps:parsed.steps||[],time:parsed.time||'',servings:parsed.servings||'',emoji:parsed.emoji||CATS[parsed.category]?.emoji||'🍽️',source:url,createdAt:Date.now()});
     statusDiv.innerHTML='<div class="status-msg success">✓ Rezept erfolgreich importiert!</div>';
     setTimeout(()=>{closeModal('add-modal');document.getElementById('recipe-url').value='';},1200);
-  }catch(e){console.error(e);statusDiv.innerHTML='<div class="status-msg error">⚠ '+e.message+'</div>';}
+  }catch(e){console.error(e);statusDiv.innerHTML='<div class="status-msg error">⚠ Import fehlgeschlagen. URL prüfen oder manuell eingeben.</div>';}
 };
-
 
 window.debugProxy = async function() {
   const proxyUrl = window.PROXY_URL || 'nicht gesetzt';
@@ -591,6 +697,60 @@ window.debugProxy = async function() {
     msg += 'Fehler: ' + e.message;
   }
   alert(msg);
+};
+
+let editIngredients = [];
+
+window.openEditModal = function(id) {
+  const r = recipes.find(x=>x.id===id);
+  if(!r) return;
+  document.getElementById('e-id').value = id;
+  document.getElementById('e-name').value = r.name || '';
+  document.getElementById('e-category').value = r.category || 'fleisch';
+  document.getElementById('e-desc').value = r.description || '';
+  document.getElementById('e-steps').value = (r.steps||[]).join('\n');
+  document.getElementById('e-time').value = r.time || '';
+  document.getElementById('e-servings').value = r.servings || '';
+  editIngredients = [...(r.ingredients||[])];
+  renderEditIngredientTags();
+  document.getElementById('edit-modal').classList.add('open');
+};
+
+window.addEditIngredient = function() {
+  const inp = document.getElementById('e-ingredient-input');
+  const val = inp.value.trim();
+  if(val){ editIngredients.push(val); inp.value=''; renderEditIngredientTags(); }
+};
+
+window.removeEditIngredient = function(i) {
+  editIngredients.splice(i,1); renderEditIngredientTags();
+};
+
+function renderEditIngredientTags() {
+  document.getElementById('e-ingredient-tags').innerHTML = editIngredients
+    .map((ing,i)=>`<span class="ingredient-tag">${ing}<button onclick="removeEditIngredient(${i})">×</button></span>`).join('');
+}
+
+window.saveEdit = async function() {
+  const id = document.getElementById('e-id').value;
+  const name = document.getElementById('e-name').value.trim();
+  if(!name){ alert('Bitte einen Namen eingeben.'); return; }
+  const cat = document.getElementById('e-category').value;
+  setSyncStatus('syncing','Wird gespeichert…');
+  try {
+    await updateDoc(doc(db,'recipes',id), {
+      name,
+      category: cat,
+      description: document.getElementById('e-desc').value.trim(),
+      ingredients: [...editIngredients],
+      steps: document.getElementById('e-steps').value.split('\n').map(s=>s.trim()).filter(Boolean),
+      time: document.getElementById('e-time').value.trim(),
+      servings: document.getElementById('e-servings').value.trim(),
+      emoji: CATS[cat]?.emoji || '🍽️',
+    });
+    closeModal('edit-modal');
+    editIngredients = [];
+  } catch(e) { setSyncStatus('error','Fehler'); alert('Speichern fehlgeschlagen: ' + e.message); }
 };
 </script>
 </body>
