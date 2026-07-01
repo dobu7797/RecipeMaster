@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
@@ -180,14 +180,18 @@
   .task-section-label{font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;}
   .task-section-label.daily{color:#7c6af7;}
   .task-section-label.weekly{color:var(--yellow);}
+  .task-section-label.monthly{color:#e879a0;}
   .task-section-count{font-size:12px;color:var(--text-muted);}
   .task-item{background:var(--surface);border-bottom:1px solid var(--border);padding:13px 16px;display:flex;align-items:center;gap:12px;}
   .task-item.daily-item{border-left:3px solid rgba(124,106,247,0.5);}
   .task-item.weekly-item{border-left:3px solid rgba(240,180,41,0.5);}
+  .task-item.monthly-item{border-left:3px solid rgba(232,121,160,0.5);}
   .task-item.done-item{opacity:0.55;}
-  .task-check-btn{width:28px;height:28px;border-radius:50%;border:2px solid var(--border-strong);background:none;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;color:transparent;}
+  .task-check-btn{width:32px;height:32px;border-radius:50%;border:2px solid var(--border-strong);background:var(--surface2);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;font-size:15px;color:inherit;}
   .task-check-btn.daily-check{border-color:rgba(124,106,247,0.5);}
   .task-check-btn.weekly-check{border-color:rgba(240,180,41,0.5);}
+  .task-check-btn.monthly-check{border-color:rgba(232,121,160,0.5);}
+  .task-check-btn.joint-check{border-color:rgba(76,175,130,0.5);}
   .task-check-btn.done{background:var(--green);border-color:var(--green);color:white;}
   .task-info{flex:1;min-width:0;}
   .task-title{font-size:15px;font-weight:500;}
@@ -198,6 +202,7 @@
   .task-pts{font-size:13px;font-weight:700;flex-shrink:0;padding:2px 8px;border-radius:99px;}
   .task-pts.daily-pts{color:#7c6af7;background:rgba(124,106,247,0.12);}
   .task-pts.weekly-pts{color:var(--yellow);background:rgba(240,180,41,0.12);}
+  .task-pts.monthly-pts{color:#e879a0;background:rgba(232,121,160,0.12);}
   .task-del-btn{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:4px;}
   .task-del-btn:active{color:var(--red);}
   .week-reset-row{padding:8px 12px 16px;display:flex;justify-content:flex-end;}
@@ -371,7 +376,7 @@
             <input class="form-input" id="recipe-url" type="url" placeholder="https://www.chefkoch.de/...">
           </div>
           <div id="import-status"></div>
-          <button class="btn btn-primary" onclick="importFromUrl()"><i class="ti ti-wand"></i> Mit KI importieren</button>
+          <button class="btn btn-primary" onclick="importFromUrl()"><i class="ti ti-link"></i> Rezept importieren</button>
         </div>
         <div id="tab-manual" style="display:none">
           <div class="form-group"><label class="form-label">Rezeptname</label><input class="form-input" id="m-name" type="text" placeholder="Spaghetti Carbonara"></div>
@@ -415,6 +420,15 @@
     <!-- Scoreboard -->
     <div class="scoreboard" id="scoreboard"></div>
 
+    <!-- Task Filters Tab Bar -->
+    <div style="padding: 0 12px 10px;">
+      <div class="tab-bar" id="task-filter-bar">
+        <button class="tab-btn active" onclick="setTaskTab('täglich', this)">☀️ Täglich</button>
+        <button class="tab-btn" onclick="setTaskTab('wöchentlich', this)">📅 Wöchentlich</button>
+        <button class="tab-btn" onclick="setTaskTab('monatlich', this)">🌙 Monatlich</button>
+      </div>
+    </div>
+
     <div id="task-list"></div>
   </div>
 
@@ -432,6 +446,7 @@
           <div class="tab-bar" id="task-type-bar">
             <button class="tab-btn active" onclick="selectTaskType('täglich',this)">☀️ Täglich (1 Pt.)</button>
             <button class="tab-btn" onclick="selectTaskType('wöchentlich',this)">📅 Wöchentlich (2 Pt.)</button>
+            <button class="tab-btn" onclick="selectTaskType('monatlich',this)">🌙 Monatlich (3 Pt.)</button>
           </div>
           <input type="hidden" id="t-repeat" value="täglich">
         </div>
@@ -814,17 +829,19 @@ window.importFromUrl=async function(){
     const proxyUrl=window.PROXY_URL||'DEINE_VERCEL_URL/api/claude';
     const response=await fetch(proxyUrl,{
       method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,tools:[{type:'web_search_20250305',name:'web_search'}],messages:[{role:'user',content:`Rufe die Rezeptseite unter dieser URL ab: ${url}\n\nAntworte NUR mit JSON:\n{"name":"...","category":"vegan|vegetarisch|fleisch|suess","description":"...","ingredients":["..."],"steps":["..."],"time":"...","servings":"...","emoji":"..."}\n\nKategorien: vegan=keine tierischen Produkte, vegetarisch=kein Fleisch/Fisch, fleisch=Fleisch/Fisch, suess=Desserts/Kuchen/Nachspeisen. Nur JSON, kein Markdown.`}]})
+      body:JSON.stringify({ url })
     });
-    const data=await response.json();
-    const text=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
-    const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
+    if(!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error || 'Server-Fehler beim Import');
+    }
+    const parsed=await response.json();
     if(!parsed.name||!parsed.category) throw new Error('Ungültiges Format');
     setSyncStatus('syncing','Wird gespeichert…');
     await addDoc(collection(db,'recipes'),{name:parsed.name,category:parsed.category,description:parsed.description||'',ingredients:parsed.ingredients||[],steps:parsed.steps||[],time:parsed.time||'',servings:parsed.servings||'',emoji:parsed.emoji||CATS[parsed.category]?.emoji||'🍽️',source:url,createdAt:Date.now()});
     statusDiv.innerHTML='<div class="status-msg success">✓ Rezept erfolgreich importiert!</div>';
     setTimeout(()=>{closeModal('add-modal');document.getElementById('recipe-url').value='';},1200);
-  }catch(e){console.error(e);statusDiv.innerHTML='<div class="status-msg error">⚠ Import fehlgeschlagen. URL prüfen oder manuell eingeben.</div>';}
+  }catch(e){console.error(e);statusDiv.innerHTML=`<div class="status-msg error">⚠ Import fehlgeschlagen: ${e.message}</div>`;}
 };
 
 window.debugProxy = async function() {
@@ -849,11 +866,19 @@ window.debugProxy = async function() {
 // TASKS
 // ══════════════════════════════════════════════════════════
 let tasks = [];
+let currentTaskTab = 'täglich';
+
+window.setTaskTab = function(tab, btn) {
+  currentTaskTab = tab;
+  document.querySelectorAll('#task-filter-bar .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTaskList();
+};
 
 // Firestore realtime listener for tasks
 onSnapshot(collection(db,'tasks'), snap => {
   tasks = snap.docs.map(d=>({id:d.id,...d.data()}));
-  carryOverDailyTasks();
+  performTaskMaintenance();
   renderTaskPage();
   checkReminder();
 });
@@ -877,7 +902,9 @@ window.saveTask = async function() {
   const title = document.getElementById('t-title').value.trim();
   if(!title){ alert('Bitte eine Aufgabe eingeben.'); return; }
   const repeat = document.getElementById('t-repeat').value;
-  const points = repeat === 'täglich' ? 1 : 2;
+  let points = 1;
+  if(repeat === 'wöchentlich') points = 2;
+  else if(repeat === 'monatlich') points = 3;
   try {
     await addDoc(collection(db,'tasks'), {
       title,
@@ -891,22 +918,24 @@ window.saveTask = async function() {
       createdAt: Date.now(),
       weekId: getWeekId(),
       dayId: getDayId(),
+      monthId: getMonthId(),
       carriedOver: false,
     });
     closeModal('task-modal');
   } catch(e) { alert('Fehler: ' + e.message); }
 };
 
-window.toggleTask = async function(id) {
+window.toggleTask = async function(id, mode) {
   const task = tasks.find(t=>t.id===id);
   if(!task) return;
   const btn = document.getElementById('taskbtn-'+id);
   if(btn){ btn.classList.add('popping'); setTimeout(()=>btn.classList.remove('popping'),300); }
   const nowDone = !task.done;
+  const doneBy = nowDone ? (mode === 'gemeinsam' ? 'Gemeinsam' : currentUser.user) : null;
   try {
     await updateDoc(doc(db,'tasks',id), {
       done: nowDone,
-      doneBy: nowDone ? currentUser.user : null,
+      doneBy: doneBy,
       doneAt: nowDone ? Date.now() : null,
     });
   } catch(e) { console.error(e); }
@@ -923,42 +952,125 @@ window.resetWeek = async function() {
     if(t.repeat === 'einmalig') {
       await deleteDoc(doc(db,'tasks',t.id));
     } else {
-      await updateDoc(doc(db,'tasks',t.id),{done:false,doneBy:null,doneAt:null,weekId:getWeekId(),dayId:getDayId(),carriedOver:false});
+      await updateDoc(doc(db,'tasks',t.id),{done:false,doneBy:null,doneAt:null,weekId:getWeekId(),dayId:getDayId(),monthId:getMonthId(),carriedOver:false});
     }
   }
 };
 
-// Carry over undone daily tasks to today
-async function carryOverDailyTasks() {
+// Perform automatic task maintenance (carry over undone tasks, reset completed ones)
+async function performTaskMaintenance() {
   const todayId = getDayId();
-  const dailyUndone = tasks.filter(t =>
-    t.repeat === 'täglich' && !t.done && t.dayId && t.dayId !== todayId
-  );
-  for(const t of dailyUndone) {
-    try {
-      await updateDoc(doc(db,'tasks',t.id), { dayId: todayId, carriedOver: true });
-    } catch(e) { console.error(e); }
+  const thisWeekId = getWeekId();
+  const thisMonthId = getMonthId();
+  
+  for(const t of tasks) {
+    // Daily Tasks
+    if(t.repeat === 'täglich') {
+      if(t.dayId && t.dayId !== todayId) {
+        if(t.done) {
+          try {
+            await updateDoc(doc(db,'tasks',t.id), {
+              done: false,
+              doneBy: null,
+              doneAt: null,
+              dayId: todayId,
+              carriedOver: false,
+              weekId: thisWeekId
+            });
+          } catch(e) { console.error(e); }
+        } else {
+          try {
+            await updateDoc(doc(db,'tasks',t.id), {
+              dayId: todayId,
+              carriedOver: true,
+              weekId: thisWeekId
+            });
+          } catch(e) { console.error(e); }
+        }
+      }
+    }
+    // Weekly Tasks
+    else if(t.repeat === 'wöchentlich') {
+      if(t.weekId && t.weekId !== thisWeekId) {
+        if(t.done) {
+          try {
+            await updateDoc(doc(db,'tasks',t.id), {
+              done: false,
+              doneBy: null,
+              doneAt: null,
+              weekId: thisWeekId,
+              carriedOver: false
+            });
+          } catch(e) { console.error(e); }
+        } else {
+          try {
+            await updateDoc(doc(db,'tasks',t.id), {
+              weekId: thisWeekId,
+              carriedOver: true
+            });
+          } catch(e) { console.error(e); }
+        }
+      }
+    }
+    // Monthly Tasks
+    else if(t.repeat === 'monatlich') {
+      if(t.monthId && t.monthId !== thisMonthId) {
+        if(t.done) {
+          try {
+            await updateDoc(doc(db,'tasks',t.id), {
+              done: false,
+              doneBy: null,
+              doneAt: null,
+              monthId: thisMonthId,
+              carriedOver: false
+            });
+          } catch(e) { console.error(e); }
+        } else {
+          try {
+            await updateDoc(doc(db,'tasks',t.id), {
+              monthId: thisMonthId,
+              carriedOver: true
+            });
+          } catch(e) { console.error(e); }
+        }
+      }
+    }
   }
 }
 
 function getWeekId() {
   const now = new Date();
   const jan1 = new Date(now.getFullYear(),0,1);
-  const week = Math.ceil(((now-jan1)/86400000 + jan1.getDay()+1)/7);
-  return `${now.getFullYear()}-W${week}`;
+  const weekNum = Math.ceil(((now - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+  return `${now.getFullYear()}-W${String(weekNum).padStart(2,'0')}`;
 }
 
 function getDayId() {
   const now = new Date();
-  return `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+}
+
+function getMonthId() {
+  const now = new Date();
+  return `${now.getFullYear()}-M${now.getMonth()+1}`;
 }
 
 function getScores() {
   const scores = {};
-  USERS.forEach(u=>{ scores[u.user]={points:0,count:0}; });
-  // Weekly score: all done tasks this week
-  tasks.filter(t=>t.weekId===getWeekId()&&t.done&&t.doneBy).forEach(t=>{
-    if(scores[t.doneBy]){ scores[t.doneBy].points+=t.points||1; scores[t.doneBy].count++; }
+  USERS.forEach(u => { scores[u.user] = {points:0, count:0}; });
+  const todayId = getDayId();
+  const thisWeekId = getWeekId();
+  const thisMonthId = getMonthId();
+  tasks.filter(t => t.done).forEach(t => {
+    const pts = t.points || 1;
+    if(t.doneBy === 'Gemeinsam') {
+      USERS.forEach(u => {
+        if(scores[u.user]) { scores[u.user].points += pts; scores[u.user].count++; }
+      });
+    } else if(t.doneBy && scores[t.doneBy]) {
+      scores[t.doneBy].points += pts;
+      scores[t.doneBy].count++;
+    }
   });
   return scores;
 }
@@ -983,31 +1095,70 @@ function renderScoreboard() {
       <div class="score-tasks">${s.count} Aufgabe${s.count!==1?'n':''} erledigt</div>
     </div>`;
   }).join('');
-  const openCount = tasks.filter(t=>t.repeat==='täglich'&&t.dayId===getDayId()&&!t.done).length
-    + tasks.filter(t=>t.repeat==='wöchentlich'&&t.weekId===getWeekId()&&!t.done).length;
+
+  const todayId = getDayId();
+  const thisWeekId = getWeekId();
+  const thisMonthId = getMonthId();
+  const openCount = tasks.filter(t=>t.repeat==='täglich'&&t.dayId===todayId&&!t.done).length
+    + tasks.filter(t=>t.repeat==='wöchentlich'&&t.weekId===thisWeekId&&!t.done).length
+    + tasks.filter(t=>t.repeat==='monatlich'&&t.monthId===thisMonthId&&!t.done).length;
   document.getElementById('tasks-subtitle').textContent = `KW ${getWeekId().split('-W')[1]} · ${openCount} offen`;
 }
 
 function renderTaskList() {
   const todayId = getDayId();
   const weekId = getWeekId();
+  const monthId = getMonthId();
 
-  const daily = tasks.filter(t => t.repeat === 'täglich' && t.dayId === todayId)
-    .sort((a,b) => (a.done===b.done ? a.createdAt-b.createdAt : a.done?1:-1));
-  const weekly = tasks.filter(t => t.repeat === 'wöchentlich' && t.weekId === weekId)
-    .sort((a,b) => (a.done===b.done ? a.createdAt-b.createdAt : a.done?1:-1));
+  let filtered = [];
+  let typeLabel = '';
+  let typeClass = '';
 
-  const renderItem = (t, type) => {
-    const typeClass = type === 'täglich' ? 'daily' : 'weekly';
+  if (currentTaskTab === 'täglich') {
+    filtered = tasks.filter(t => t.repeat === 'täglich' && t.dayId === todayId);
+    typeLabel = '☀️ Tägliche Aufgaben';
+    typeClass = 'daily';
+  } else if (currentTaskTab === 'wöchentlich') {
+    filtered = tasks.filter(t => t.repeat === 'wöchentlich' && t.weekId === weekId);
+    typeLabel = '📅 Wöchentliche Aufgaben';
+    typeClass = 'weekly';
+  } else if (currentTaskTab === 'monatlich') {
+    filtered = tasks.filter(t => t.repeat === 'monatlich' && t.monthId === monthId);
+    typeLabel = '🌙 Monatliche Aufgaben';
+    typeClass = 'monthly';
+  }
+
+  filtered.sort((a,b) => (a.done===b.done ? a.createdAt-b.createdAt : a.done?1:-1));
+  const doneCount = filtered.filter(t=>t.done).length;
+
+  const renderItem = (t) => {
+    let checkButtonsHtml = '';
+    if (t.done) {
+      checkButtonsHtml = `
+        <button class="task-check-btn ${typeClass}-check done" id="taskbtn-${t.id}" onclick="toggleTask('${t.id}')">
+          <i class="ti ti-check" style="font-size:14px"></i>
+        </button>
+      `;
+    } else {
+      checkButtonsHtml = `
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button class="task-check-btn ${typeClass}-check" title="Als ${currentUser.user} erledigt" id="taskbtn-${t.id}" onclick="toggleTask('${t.id}', 'solo')">
+            ${currentUser.avatar}
+          </button>
+          <button class="task-check-btn ${typeClass}-check joint-check" title="Gemeinsam erledigt" onclick="toggleTask('${t.id}', 'gemeinsam')">
+            🤝
+          </button>
+        </div>
+      `;
+    }
+
     return `<div class="task-item ${typeClass}-item ${t.done?'done-item':''}">
-      <button class="task-check-btn ${typeClass}-check ${t.done?'done':''}" id="taskbtn-${t.id}" onclick="toggleTask('${t.id}')">
-        ${t.done?'<i class="ti ti-check" style="font-size:14px"></i>':''}
-      </button>
+      ${checkButtonsHtml}
       <div class="task-info">
         <div class="task-title ${t.done?'done':''}">${t.title}</div>
         <div class="task-meta">
           ${t.desc?`<span style="font-size:11px;color:var(--text-muted)">${t.desc}</span>`:''}
-          ${t.done&&t.doneBy?`<span class="task-done-by">✓ ${t.doneBy}</span>`:''}
+          ${t.done&&t.doneBy?`<span class="task-done-by">${t.doneBy === 'Gemeinsam' ? '✓ Gemeinsam 🤝' : '✓ ' + t.doneBy}</span>`:''}
           ${t.carriedOver&&!t.done?`<span class="task-carried">↩ Übertragen</span>`:''}
         </div>
       </div>
@@ -1016,28 +1167,18 @@ function renderTaskList() {
     </div>`;
   };
 
-  const dailyDone = daily.filter(t=>t.done).length;
-  const weeklyDone = weekly.filter(t=>t.done).length;
-
   document.getElementById('task-list').innerHTML = `
     <div class="task-section-header">
-      <div class="task-section-label daily">☀️ Tägliche Aufgaben</div>
-      <div class="task-section-count">${dailyDone}/${daily.length} erledigt</div>
+      <div class="task-section-label ${typeClass}">${typeLabel}</div>
+      <div class="task-section-count">${doneCount}/${filtered.length} erledigt</div>
     </div>
-    ${daily.length ? daily.map(t=>renderItem(t,'täglich')).join('') : '<div class="task-empty">Keine täglichen Aufgaben</div>'}
-
-    <div class="task-section-header" style="margin-top:8px">
-      <div class="task-section-label weekly">📅 Wöchentliche Aufgaben</div>
-      <div class="task-section-count">${weeklyDone}/${weekly.length} erledigt</div>
-    </div>
-    ${weekly.length ? weekly.map(t=>renderItem(t,'wöchentlich')).join('') : '<div class="task-empty">Keine wöchentlichen Aufgaben</div>'}
+    ${filtered.length ? filtered.map(t=>renderItem(t)).join('') : `<div class="task-empty">Keine Aufgaben in dieser Kategorie</div>`}
 
     <div class="week-reset-row">
-      <button class="week-reset-btn" onclick="resetWeek()">↺ Woche zurücksetzen</button>
+      <button class="week-reset-btn" onclick="resetWeek()">↺ Alles zurücksetzen</button>
     </div>
   `;
 }
-
 
 // ── REMINDER BANNER ───────────────────────────────────────
 function checkReminder() {
@@ -1045,14 +1186,26 @@ function checkReminder() {
   if(!banner || !currentUser) return;
   const key = `reminder_${currentUser.user}_${new Date().toDateString()}`;
   if(sessionStorage.getItem(key)) return;
-  const open = tasks.filter(t => t.weekId === getWeekId() && !t.done);
-  if(open.length === 0) return;
-  const dailyOpen = open.filter(t => t.repeat === 'täglich');
-  const totalPts = open.reduce((s,t) => s+(t.points||1), 0);
+
+  const todayId = getDayId();
+  const thisWeekId = getWeekId();
+  const thisMonthId = getMonthId();
+
+  const openDaily = tasks.filter(t => t.repeat === 'täglich' && t.dayId === todayId && !t.done);
+  const openWeekly = tasks.filter(t => t.repeat === 'wöchentlich' && t.weekId === thisWeekId && !t.done);
+  const openMonthly = tasks.filter(t => t.repeat === 'monatlich' && t.monthId === thisMonthId && !t.done);
+  const totalOpen = openDaily.length + openWeekly.length + openMonthly.length;
+
+  if(totalOpen === 0) return;
+
+  const totalPts = openDaily.reduce((s,t) => s+(t.points||1), 0)
+                 + openWeekly.reduce((s,t) => s+(t.points||2), 0)
+                 + openMonthly.reduce((s,t) => s+(t.points||3), 0);
+
   document.getElementById('reminder-text').textContent =
-    `Hey ${currentUser.user}! Du hast ${open.length} offene Aufgabe${open.length!==1?'n':''} 📋`;
+    `Hey ${currentUser.user}! Du hast ${totalOpen} offene Aufgabe${totalOpen!==1?'n':''} 📋`;
   document.getElementById('reminder-sub').textContent =
-    `${dailyOpen.length > 0 ? dailyOpen.length + ' täglich · ' : ''}${totalPts} Punkt${totalPts!==1?'e':''} zu holen`;
+    `${openDaily.length > 0 ? openDaily.length + ' täglich · ' : ''}${totalPts} Punkt${totalPts!==1?'e':''} zu holen`;
   banner.style.display = 'flex';
   document.getElementById('app').style.paddingTop = '52px';
   sessionStorage.setItem(key, '1');

@@ -45,14 +45,14 @@ module.exports = async function handler(req, res) {
     const html = await pageRes.text();
     console.log('HTML length:', html.length);
 
-    // Extract JSON-LD (regex toleriert nun auch Attribute in beliebiger Reihenfolge)
-    const jsonLdMatches = html.match(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi) || [];
+    // Extract JSON-LD
+    const jsonLdMatches = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi) || [];
     console.log('JSON-LD blocks found:', jsonLdMatches.length);
 
     let recipe = null;
     for (const block of jsonLdMatches) {
       try {
-        const inner = block.replace(/<script\b[^>]*>/i, '').replace(/<\/script>/i, '').trim();
+        const inner = block.replace(/<script[^>]*>/i, '').replace(/<\/script>/i, '').trim();
         const parsed = JSON.parse(inner);
         const items = Array.isArray(parsed) ? parsed : (parsed['@graph'] ? parsed['@graph'] : [parsed]);
         for (const item of items) {
