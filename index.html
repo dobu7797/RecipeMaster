@@ -176,31 +176,36 @@
   .score-label{font-size:11px;color:var(--text-muted);}
   .winner-badge{position:absolute;top:8px;right:8px;font-size:18px;}
   .score-tasks{font-size:11px;color:var(--text-muted);margin-top:2px;}
-  .task-tabs{display:flex;gap:0;padding:0 12px 8px;}
-  .task-tab{flex:1;padding:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);font-size:13px;cursor:pointer;transition:all 0.2s;}
-  .task-tab:first-child{border-radius:var(--radius-sm) 0 0 var(--radius-sm);}
-  .task-tab:last-child{border-radius:0 var(--radius-sm) var(--radius-sm) 0;}
-  .task-tab.active{background:var(--accent-light);border-color:var(--accent-border);color:var(--accent);}
-  .task-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);padding:8px 16px 4px;}
-  .task-item{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;gap:12px;}
+  .task-section-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 6px;}
+  .task-section-label{font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;}
+  .task-section-label.daily{color:#7c6af7;}
+  .task-section-label.weekly{color:var(--yellow);}
+  .task-section-count{font-size:12px;color:var(--text-muted);}
+  .task-item{background:var(--surface);border-bottom:1px solid var(--border);padding:13px 16px;display:flex;align-items:center;gap:12px;}
+  .task-item.daily-item{border-left:3px solid rgba(124,106,247,0.5);}
+  .task-item.weekly-item{border-left:3px solid rgba(240,180,41,0.5);}
+  .task-item.done-item{opacity:0.55;}
   .task-check-btn{width:28px;height:28px;border-radius:50%;border:2px solid var(--border-strong);background:none;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;color:transparent;}
+  .task-check-btn.daily-check{border-color:rgba(124,106,247,0.5);}
+  .task-check-btn.weekly-check{border-color:rgba(240,180,41,0.5);}
   .task-check-btn.done{background:var(--green);border-color:var(--green);color:white;}
   .task-info{flex:1;min-width:0;}
   .task-title{font-size:15px;font-weight:500;}
-  .task-title.done{text-decoration:line-through;opacity:0.5;}
+  .task-title.done{text-decoration:line-through;}
   .task-meta{display:flex;gap:8px;margin-top:3px;align-items:center;flex-wrap:wrap;}
-  .task-badge{font-size:11px;padding:1px 7px;border-radius:99px;border:1px solid;}
-  .task-badge.täglich{background:rgba(124,106,247,0.1);color:var(--accent);border-color:var(--accent-border);}
-  .task-badge.wöchentlich{background:rgba(240,180,41,0.1);color:var(--yellow);border-color:var(--yellow-border);}
-  .task-badge.einmalig{background:rgba(255,255,255,0.05);color:var(--text-muted);border-color:var(--border-strong);}
-  .task-done-by{font-size:11px;color:var(--text-muted);}
-  .task-pts{font-size:13px;font-weight:600;color:var(--accent);flex-shrink:0;}
+  .task-done-by{font-size:11px;color:var(--green);}
+  .task-carried{font-size:11px;color:var(--yellow);}
+  .task-pts{font-size:13px;font-weight:700;flex-shrink:0;padding:2px 8px;border-radius:99px;}
+  .task-pts.daily-pts{color:#7c6af7;background:rgba(124,106,247,0.12);}
+  .task-pts.weekly-pts{color:var(--yellow);background:rgba(240,180,41,0.12);}
   .task-del-btn{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:4px;}
   .task-del-btn:active{color:var(--red);}
-  .week-reset-row{padding:4px 12px 8px;display:flex;justify-content:flex-end;}
+  .week-reset-row{padding:8px 12px 16px;display:flex;justify-content:flex-end;}
   .week-reset-btn{background:none;border:1px solid var(--border-strong);color:var(--text-muted);border-radius:var(--radius-sm);font-size:12px;padding:6px 12px;cursor:pointer;}
+  .task-empty{text-align:center;padding:16px;color:var(--text-muted);font-size:13px;font-style:italic;}
   @keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
   .popping{animation:pop 0.3s ease;}
+
   /* ── SHOPPING ── */
   .shopping-category{padding:6px 16px 4px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);}
   .shopping-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;}
@@ -410,13 +415,6 @@
     <!-- Scoreboard -->
     <div class="scoreboard" id="scoreboard"></div>
 
-    <!-- Task filter tabs -->
-    <div class="task-tabs">
-      <button class="task-tab active" onclick="setTaskTab('offen',this)">Offen</button>
-      <button class="task-tab" onclick="setTaskTab('erledigt',this)">Erledigt</button>
-      <button class="task-tab" onclick="setTaskTab('alle',this)">Alle</button>
-    </div>
-
     <div id="task-list"></div>
   </div>
 
@@ -430,28 +428,20 @@
       </div>
       <div class="modal-body">
         <div class="form-group">
+          <label class="form-label">Typ</label>
+          <div class="tab-bar" id="task-type-bar">
+            <button class="tab-btn active" onclick="selectTaskType('täglich',this)">☀️ Täglich (1 Pt.)</button>
+            <button class="tab-btn" onclick="selectTaskType('wöchentlich',this)">📅 Wöchentlich (2 Pt.)</button>
+          </div>
+          <input type="hidden" id="t-repeat" value="täglich">
+        </div>
+        <div class="form-group">
           <label class="form-label">Aufgabe</label>
           <input class="form-input" id="t-title" type="text" placeholder="z.B. Wäsche waschen">
         </div>
         <div class="form-group">
           <label class="form-label">Beschreibung (optional)</label>
           <input class="form-input" id="t-desc" type="text" placeholder="Details…">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Wiederholung</label>
-          <select class="form-select" id="t-repeat">
-            <option value="einmalig">Einmalig</option>
-            <option value="täglich">Täglich</option>
-            <option value="wöchentlich">Wöchentlich</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Punkte</label>
-          <select class="form-select" id="t-points">
-            <option value="1">1 Punkt (leicht)</option>
-            <option value="2">2 Punkte (mittel)</option>
-            <option value="3">3 Punkte (schwer)</option>
-          </select>
         </div>
         <button class="btn btn-primary" onclick="saveTask()"><i class="ti ti-check"></i> Aufgabe speichern</button>
       </div>
@@ -859,27 +849,26 @@ window.debugProxy = async function() {
 // TASKS
 // ══════════════════════════════════════════════════════════
 let tasks = [];
-let taskTab = 'offen';
 
 // Firestore realtime listener for tasks
 onSnapshot(collection(db,'tasks'), snap => {
   tasks = snap.docs.map(d=>({id:d.id,...d.data()}));
+  carryOverDailyTasks();
   renderTaskPage();
   checkReminder();
 });
 
-window.setTaskTab = function(tab, btn) {
-  taskTab = tab;
-  document.querySelectorAll('.task-tab').forEach(b=>b.classList.remove('active'));
+window.selectTaskType = function(type, btn) {
+  document.getElementById('t-repeat').value = type;
+  document.querySelectorAll('#task-type-bar .tab-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  renderTaskPage();
 };
 
 window.openTaskModal = function() {
   document.getElementById('t-title').value='';
   document.getElementById('t-desc').value='';
-  document.getElementById('t-repeat').value='einmalig';
-  document.getElementById('t-points').value='1';
+  document.getElementById('t-repeat').value='täglich';
+  document.querySelectorAll('#task-type-bar .tab-btn').forEach((b,i)=>{ b.classList.toggle('active', i===0); });
   document.getElementById('task-modal').classList.add('open');
   history.pushState({view:'modal',id:'task-modal'},'','#add-task');
 };
@@ -887,18 +876,22 @@ window.openTaskModal = function() {
 window.saveTask = async function() {
   const title = document.getElementById('t-title').value.trim();
   if(!title){ alert('Bitte eine Aufgabe eingeben.'); return; }
+  const repeat = document.getElementById('t-repeat').value;
+  const points = repeat === 'täglich' ? 1 : 2;
   try {
     await addDoc(collection(db,'tasks'), {
       title,
       desc: document.getElementById('t-desc').value.trim(),
-      repeat: document.getElementById('t-repeat').value,
-      points: parseInt(document.getElementById('t-points').value),
+      repeat,
+      points,
       done: false,
       doneBy: null,
       doneAt: null,
       createdBy: currentUser.user,
       createdAt: Date.now(),
-      weekId: getWeekId()
+      weekId: getWeekId(),
+      dayId: getDayId(),
+      carriedOver: false,
     });
     closeModal('task-modal');
   } catch(e) { alert('Fehler: ' + e.message); }
@@ -925,16 +918,28 @@ window.deleteTask = async function(id) {
 };
 
 window.resetWeek = async function() {
-  if(!confirm('Alle Aufgaben dieser Woche zurücksetzen und Punkte löschen?')) return;
-  const weekTasks = tasks.filter(t=>t.weekId===getWeekId());
-  for(const t of weekTasks) {
+  if(!confirm('Woche zurücksetzen? Punkte werden gelöscht, wiederkehrende Aufgaben bleiben.')) return;
+  for(const t of tasks) {
     if(t.repeat === 'einmalig') {
       await deleteDoc(doc(db,'tasks',t.id));
     } else {
-      await updateDoc(doc(db,'tasks',t.id),{done:false,doneBy:null,doneAt:null,weekId:getWeekId()});
+      await updateDoc(doc(db,'tasks',t.id),{done:false,doneBy:null,doneAt:null,weekId:getWeekId(),dayId:getDayId(),carriedOver:false});
     }
   }
 };
+
+// Carry over undone daily tasks to today
+async function carryOverDailyTasks() {
+  const todayId = getDayId();
+  const dailyUndone = tasks.filter(t =>
+    t.repeat === 'täglich' && !t.done && t.dayId && t.dayId !== todayId
+  );
+  for(const t of dailyUndone) {
+    try {
+      await updateDoc(doc(db,'tasks',t.id), { dayId: todayId, carriedOver: true });
+    } catch(e) { console.error(e); }
+  }
+}
 
 function getWeekId() {
   const now = new Date();
@@ -943,11 +948,16 @@ function getWeekId() {
   return `${now.getFullYear()}-W${week}`;
 }
 
+function getDayId() {
+  const now = new Date();
+  return `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+}
+
 function getScores() {
-  const weekTasks = tasks.filter(t=>t.weekId===getWeekId()&&t.done&&t.doneBy);
   const scores = {};
   USERS.forEach(u=>{ scores[u.user]={points:0,count:0}; });
-  weekTasks.forEach(t=>{
+  // Weekly score: all done tasks this week
+  tasks.filter(t=>t.weekId===getWeekId()&&t.done&&t.doneBy).forEach(t=>{
     if(scores[t.doneBy]){ scores[t.doneBy].points+=t.points||1; scores[t.doneBy].count++; }
   });
   return scores;
@@ -973,42 +983,59 @@ function renderScoreboard() {
       <div class="score-tasks">${s.count} Aufgabe${s.count!==1?'n':''} erledigt</div>
     </div>`;
   }).join('');
-  document.getElementById('tasks-subtitle').textContent = `KW ${getWeekId().split('-W')[1]} · ${tasks.filter(t=>t.weekId===getWeekId()&&!t.done).length} offen`;
+  const openCount = tasks.filter(t=>t.repeat==='täglich'&&t.dayId===getDayId()&&!t.done).length
+    + tasks.filter(t=>t.repeat==='wöchentlich'&&t.weekId===getWeekId()&&!t.done).length;
+  document.getElementById('tasks-subtitle').textContent = `KW ${getWeekId().split('-W')[1]} · ${openCount} offen`;
 }
 
 function renderTaskList() {
-  const weekTasks = tasks.filter(t=>t.weekId===getWeekId());
-  let filtered = weekTasks;
-  if(taskTab==='offen') filtered = weekTasks.filter(t=>!t.done);
-  if(taskTab==='erledigt') filtered = weekTasks.filter(t=>t.done);
-  filtered.sort((a,b)=>(a.done===b.done)?a.createdAt-b.createdAt:(a.done?1:-1));
+  const todayId = getDayId();
+  const weekId = getWeekId();
 
-  const el = document.getElementById('task-list');
-  if(!filtered.length){
-    const msgs = {offen:'Alle Aufgaben erledigt! 🎉', erledigt:'Noch nichts erledigt.', alle:'Noch keine Aufgaben. Füge eine hinzu!'};
-    el.innerHTML=`<div class="empty-state"><i class="ti ti-checkup-list"></i><p>${msgs[taskTab]||''}</p></div>`;
-    return;
-  }
+  const daily = tasks.filter(t => t.repeat === 'täglich' && t.dayId === todayId)
+    .sort((a,b) => (a.done===b.done ? a.createdAt-b.createdAt : a.done?1:-1));
+  const weekly = tasks.filter(t => t.repeat === 'wöchentlich' && t.weekId === weekId)
+    .sort((a,b) => (a.done===b.done ? a.createdAt-b.createdAt : a.done?1:-1));
 
-  el.innerHTML = filtered.map(t => {
-    const doneClass = t.done ? 'done' : '';
-    const doneByStr = t.done && t.doneBy ? `✓ ${t.doneBy}` : '';
-    return `<div class="task-item">
-      <button class="task-check-btn ${t.done?'done':''}" id="taskbtn-${t.id}" onclick="toggleTask('${t.id}')">
+  const renderItem = (t, type) => {
+    const typeClass = type === 'täglich' ? 'daily' : 'weekly';
+    return `<div class="task-item ${typeClass}-item ${t.done?'done-item':''}">
+      <button class="task-check-btn ${typeClass}-check ${t.done?'done':''}" id="taskbtn-${t.id}" onclick="toggleTask('${t.id}')">
         ${t.done?'<i class="ti ti-check" style="font-size:14px"></i>':''}
       </button>
       <div class="task-info">
-        <div class="task-title ${doneClass}">${t.title}</div>
+        <div class="task-title ${t.done?'done':''}">${t.title}</div>
         <div class="task-meta">
-          <span class="task-badge ${t.repeat}">${t.repeat}</span>
           ${t.desc?`<span style="font-size:11px;color:var(--text-muted)">${t.desc}</span>`:''}
-          ${doneByStr?`<span class="task-done-by">${doneByStr}</span>`:''}
+          ${t.done&&t.doneBy?`<span class="task-done-by">✓ ${t.doneBy}</span>`:''}
+          ${t.carriedOver&&!t.done?`<span class="task-carried">↩ Übertragen</span>`:''}
         </div>
       </div>
-      <div class="task-pts">+${t.points||1}P</div>
+      <span class="task-pts ${typeClass}-pts">+${t.points}P</span>
       <button class="task-del-btn" onclick="deleteTask('${t.id}')"><i class="ti ti-trash"></i></button>
     </div>`;
-  }).join('') + `<div class="week-reset-row"><button class="week-reset-btn" onclick="resetWeek()">↺ Woche zurücksetzen</button></div>`;
+  };
+
+  const dailyDone = daily.filter(t=>t.done).length;
+  const weeklyDone = weekly.filter(t=>t.done).length;
+
+  document.getElementById('task-list').innerHTML = `
+    <div class="task-section-header">
+      <div class="task-section-label daily">☀️ Tägliche Aufgaben</div>
+      <div class="task-section-count">${dailyDone}/${daily.length} erledigt</div>
+    </div>
+    ${daily.length ? daily.map(t=>renderItem(t,'täglich')).join('') : '<div class="task-empty">Keine täglichen Aufgaben</div>'}
+
+    <div class="task-section-header" style="margin-top:8px">
+      <div class="task-section-label weekly">📅 Wöchentliche Aufgaben</div>
+      <div class="task-section-count">${weeklyDone}/${weekly.length} erledigt</div>
+    </div>
+    ${weekly.length ? weekly.map(t=>renderItem(t,'wöchentlich')).join('') : '<div class="task-empty">Keine wöchentlichen Aufgaben</div>'}
+
+    <div class="week-reset-row">
+      <button class="week-reset-btn" onclick="resetWeek()">↺ Woche zurücksetzen</button>
+    </div>
+  `;
 }
 
 
