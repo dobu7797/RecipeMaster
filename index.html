@@ -165,6 +165,43 @@
   .day-recipe-emoji{font-size:24px;flex-shrink:0;}
   .day-recipe-name{font-size:15px;font-weight:500;flex:1;}
   .day-empty{padding:12px 14px;color:var(--text-muted);font-size:14px;font-style:italic;}
+  /* ── TASKS ── */
+  .fab-inline{background:var(--accent);border:none;color:white;width:36px;height:36px;border-radius:50%;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .scoreboard{display:flex;gap:10px;padding:12px;margin-bottom:2px;}
+  .score-card{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center;position:relative;overflow:hidden;}
+  .score-card.winner{border-color:gold;background:linear-gradient(135deg,var(--surface),rgba(255,215,0,0.08));}
+  .score-avatar{font-size:28px;}
+  .score-name{font-size:14px;font-weight:600;margin:4px 0 2px;}
+  .score-pts{font-size:26px;font-weight:700;color:var(--accent);}
+  .score-label{font-size:11px;color:var(--text-muted);}
+  .winner-badge{position:absolute;top:8px;right:8px;font-size:18px;}
+  .score-tasks{font-size:11px;color:var(--text-muted);margin-top:2px;}
+  .task-tabs{display:flex;gap:0;padding:0 12px 8px;}
+  .task-tab{flex:1;padding:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);font-size:13px;cursor:pointer;transition:all 0.2s;}
+  .task-tab:first-child{border-radius:var(--radius-sm) 0 0 var(--radius-sm);}
+  .task-tab:last-child{border-radius:0 var(--radius-sm) var(--radius-sm) 0;}
+  .task-tab.active{background:var(--accent-light);border-color:var(--accent-border);color:var(--accent);}
+  .task-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);padding:8px 16px 4px;}
+  .task-item{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;gap:12px;}
+  .task-check-btn{width:28px;height:28px;border-radius:50%;border:2px solid var(--border-strong);background:none;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;color:transparent;}
+  .task-check-btn.done{background:var(--green);border-color:var(--green);color:white;}
+  .task-info{flex:1;min-width:0;}
+  .task-title{font-size:15px;font-weight:500;}
+  .task-title.done{text-decoration:line-through;opacity:0.5;}
+  .task-meta{display:flex;gap:8px;margin-top:3px;align-items:center;flex-wrap:wrap;}
+  .task-badge{font-size:11px;padding:1px 7px;border-radius:99px;border:1px solid;}
+  .task-badge.täglich{background:rgba(124,106,247,0.1);color:var(--accent);border-color:var(--accent-border);}
+  .task-badge.wöchentlich{background:rgba(240,180,41,0.1);color:var(--yellow);border-color:var(--yellow-border);}
+  .task-badge.einmalig{background:rgba(255,255,255,0.05);color:var(--text-muted);border-color:var(--border-strong);}
+  .task-done-by{font-size:11px;color:var(--text-muted);}
+  .task-pts{font-size:13px;font-weight:600;color:var(--accent);flex-shrink:0;}
+  .task-del-btn{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:4px;}
+  .task-del-btn:active{color:var(--red);}
+  .week-reset-row{padding:4px 12px 8px;display:flex;justify-content:flex-end;}
+  .week-reset-btn{background:none;border:1px solid var(--border-strong);color:var(--text-muted);border-radius:var(--radius-sm);font-size:12px;padding:6px 12px;cursor:pointer;}
+  @keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+  .popping{animation:pop 0.3s ease;}
+  /* ── SHOPPING ── */
   .shopping-category{padding:6px 16px 4px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);}
   .shopping-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;}
   .shopping-item:active{background:var(--surface2);}
@@ -217,10 +254,22 @@
 <!-- ══ APP ════════════════════════════════════════════════ -->
 <div id="app">
   <nav class="nav">
-    <button class="nav-btn active" onclick="showPage('library')" id="nav-library"><i class="ti ti-book-2"></i>Bibliothek</button>
+    <button class="nav-btn active" onclick="showPage('library')" id="nav-library"><i class="ti ti-book-2"></i>Rezepte</button>
     <button class="nav-btn" onclick="showPage('planner')" id="nav-planner"><i class="ti ti-calendar-week"></i>Wochenplan</button>
     <button class="nav-btn" onclick="showPage('shopping')" id="nav-shopping"><i class="ti ti-shopping-cart"></i>Einkauf</button>
+    <button class="nav-btn" onclick="showPage('tasks')" id="nav-tasks"><i class="ti ti-checkup-list"></i>Aufgaben</button>
   </nav>
+
+  <!-- REMINDER BANNER -->
+  <div id="reminder-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:150;background:linear-gradient(135deg,#7c6af7,#5b4fd4);color:white;padding:12px 16px;display:none;align-items:center;gap:10px;box-shadow:0 2px 12px rgba(0,0,0,0.3);">
+    <i class="ti ti-bell" style="font-size:20px;flex-shrink:0"></i>
+    <div style="flex:1">
+      <div style="font-size:14px;font-weight:600" id="reminder-text">Du hast offene Aufgaben!</div>
+      <div style="font-size:12px;opacity:0.85" id="reminder-sub"></div>
+    </div>
+    <button onclick="dismissReminder()" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px">Ansehen</button>
+    <button onclick="closeReminder()" style="background:none;border:none;color:white;cursor:pointer;font-size:20px;padding:4px"><i class="ti ti-x"></i></button>
+  </div>
 
   <!-- LIBRARY -->
   <div id="page-library" class="page active">
@@ -348,6 +397,67 @@
     </div>
   </div>
 
+  <!-- TASKS PAGE -->
+  <div id="page-tasks" class="page">
+    <div class="page-header">
+      <div class="page-header-left">
+        <div class="page-title">Aufgaben</div>
+        <div class="page-subtitle" id="tasks-subtitle">Deine Woche im Überblick</div>
+      </div>
+      <button class="fab-inline" onclick="openTaskModal()"><i class="ti ti-plus"></i></button>
+    </div>
+
+    <!-- Scoreboard -->
+    <div class="scoreboard" id="scoreboard"></div>
+
+    <!-- Task filter tabs -->
+    <div class="task-tabs">
+      <button class="task-tab active" onclick="setTaskTab('offen',this)">Offen</button>
+      <button class="task-tab" onclick="setTaskTab('erledigt',this)">Erledigt</button>
+      <button class="task-tab" onclick="setTaskTab('alle',this)">Alle</button>
+    </div>
+
+    <div id="task-list"></div>
+  </div>
+
+  <!-- ADD TASK MODAL -->
+  <div class="modal-overlay" id="task-modal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <div class="modal-title">Aufgabe hinzufügen</div>
+        <button class="modal-close" onclick="closeModal('task-modal')"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Aufgabe</label>
+          <input class="form-input" id="t-title" type="text" placeholder="z.B. Wäsche waschen">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Beschreibung (optional)</label>
+          <input class="form-input" id="t-desc" type="text" placeholder="Details…">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Wiederholung</label>
+          <select class="form-select" id="t-repeat">
+            <option value="einmalig">Einmalig</option>
+            <option value="täglich">Täglich</option>
+            <option value="wöchentlich">Wöchentlich</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Punkte</label>
+          <select class="form-select" id="t-points">
+            <option value="1">1 Punkt (leicht)</option>
+            <option value="2">2 Punkte (mittel)</option>
+            <option value="3">3 Punkte (schwer)</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="saveTask()"><i class="ti ti-check"></i> Aufgabe speichern</button>
+      </div>
+    </div>
+  </div>
+
   <!-- EDIT MODAL -->
   <div class="modal-overlay" id="edit-modal">
     <div class="modal">
@@ -393,18 +503,32 @@ window.PROXY_URL = 'https://recipe-master-nine.vercel.app/api/claude';
 // e.g. 'https://rezept-proxy.vercel.app/api/claude'
 
 // ── LOGIN ─────────────────────────────────────────────────
-const CREDENTIALS = { user: 'admin', pass: 'Rezepte123' };
+const USERS = [
+  { user: 'Jo', pass: 'Rezepte123', avatar: '👩' },
+  { user: 'Do', pass: 'Rezepte123', avatar: '👨' },
+];
 const SESSION_KEY = 'rm_session';
+const SESSION_USER = 'rm_user';
+
+let currentUser = null;
 
 function checkSession() {
-  return sessionStorage.getItem(SESSION_KEY) === 'ok';
+  const u = sessionStorage.getItem(SESSION_USER);
+  if(sessionStorage.getItem(SESSION_KEY) === 'ok' && u) {
+    currentUser = USERS.find(x=>x.user===u) || USERS[0];
+    return true;
+  }
+  return false;
 }
 function doLogin() {
   const u = document.getElementById('login-user').value.trim();
   const p = document.getElementById('login-pass').value;
   const err = document.getElementById('login-error');
-  if(u === CREDENTIALS.user && p === CREDENTIALS.pass) {
+  const match = USERS.find(x => x.user === u && x.pass === p);
+  if(match) {
+    currentUser = match;
     sessionStorage.setItem(SESSION_KEY, 'ok');
+    sessionStorage.setItem(SESSION_USER, match.user);
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     initApp();
@@ -416,6 +540,8 @@ function doLogin() {
 }
 function doLogout() {
   sessionStorage.removeItem(SESSION_KEY);
+  sessionStorage.removeItem(SESSION_USER);
+  currentUser = null;
   location.reload();
 }
 function togglePw() {
@@ -464,6 +590,9 @@ let currentFilter='alle', currentIngredients=[], previousPage='library';
 let searchQuery='', sortMode='newest';
 
 window.initApp = function() {
+  // Update logout button with username
+  const logoutBtn = document.querySelector('.logout-btn');
+  if(logoutBtn && currentUser) logoutBtn.title = `${currentUser.avatar} ${currentUser.user} – Abmelden`;
   setSyncStatus('syncing','Verbinde…');
   onSnapshot(collection(db,'recipes'), snap => {
     recipes = snap.docs.map(d=>({id:d.id,...d.data()}));
@@ -498,6 +627,7 @@ window.showPage = function(name, fromHistory) {
   if(name==='library') renderLibrary();
   if(name==='planner') renderPlanner();
   if(name==='shopping') renderShoppingList();
+  if(name==='tasks') renderTaskPage();
   previousPage=name;
   if(!fromHistory) history.pushState({view:name}, '', '#'+name);
 };
@@ -725,7 +855,190 @@ window.debugProxy = async function() {
   alert(msg);
 };
 
-let editIngredients = [];
+// ══════════════════════════════════════════════════════════
+// TASKS
+// ══════════════════════════════════════════════════════════
+let tasks = [];
+let taskTab = 'offen';
+
+// Firestore realtime listener for tasks
+onSnapshot(collection(db,'tasks'), snap => {
+  tasks = snap.docs.map(d=>({id:d.id,...d.data()}));
+  renderTaskPage();
+  checkReminder();
+});
+
+window.setTaskTab = function(tab, btn) {
+  taskTab = tab;
+  document.querySelectorAll('.task-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTaskPage();
+};
+
+window.openTaskModal = function() {
+  document.getElementById('t-title').value='';
+  document.getElementById('t-desc').value='';
+  document.getElementById('t-repeat').value='einmalig';
+  document.getElementById('t-points').value='1';
+  document.getElementById('task-modal').classList.add('open');
+  history.pushState({view:'modal',id:'task-modal'},'','#add-task');
+};
+
+window.saveTask = async function() {
+  const title = document.getElementById('t-title').value.trim();
+  if(!title){ alert('Bitte eine Aufgabe eingeben.'); return; }
+  try {
+    await addDoc(collection(db,'tasks'), {
+      title,
+      desc: document.getElementById('t-desc').value.trim(),
+      repeat: document.getElementById('t-repeat').value,
+      points: parseInt(document.getElementById('t-points').value),
+      done: false,
+      doneBy: null,
+      doneAt: null,
+      createdBy: currentUser.user,
+      createdAt: Date.now(),
+      weekId: getWeekId()
+    });
+    closeModal('task-modal');
+  } catch(e) { alert('Fehler: ' + e.message); }
+};
+
+window.toggleTask = async function(id) {
+  const task = tasks.find(t=>t.id===id);
+  if(!task) return;
+  const btn = document.getElementById('taskbtn-'+id);
+  if(btn){ btn.classList.add('popping'); setTimeout(()=>btn.classList.remove('popping'),300); }
+  const nowDone = !task.done;
+  try {
+    await updateDoc(doc(db,'tasks',id), {
+      done: nowDone,
+      doneBy: nowDone ? currentUser.user : null,
+      doneAt: nowDone ? Date.now() : null,
+    });
+  } catch(e) { console.error(e); }
+};
+
+window.deleteTask = async function(id) {
+  if(!confirm('Aufgabe löschen?')) return;
+  try { await deleteDoc(doc(db,'tasks',id)); } catch(e) { alert('Fehler: '+e.message); }
+};
+
+window.resetWeek = async function() {
+  if(!confirm('Alle Aufgaben dieser Woche zurücksetzen und Punkte löschen?')) return;
+  const weekTasks = tasks.filter(t=>t.weekId===getWeekId());
+  for(const t of weekTasks) {
+    if(t.repeat === 'einmalig') {
+      await deleteDoc(doc(db,'tasks',t.id));
+    } else {
+      await updateDoc(doc(db,'tasks',t.id),{done:false,doneBy:null,doneAt:null,weekId:getWeekId()});
+    }
+  }
+};
+
+function getWeekId() {
+  const now = new Date();
+  const jan1 = new Date(now.getFullYear(),0,1);
+  const week = Math.ceil(((now-jan1)/86400000 + jan1.getDay()+1)/7);
+  return `${now.getFullYear()}-W${week}`;
+}
+
+function getScores() {
+  const weekTasks = tasks.filter(t=>t.weekId===getWeekId()&&t.done&&t.doneBy);
+  const scores = {};
+  USERS.forEach(u=>{ scores[u.user]={points:0,count:0}; });
+  weekTasks.forEach(t=>{
+    if(scores[t.doneBy]){ scores[t.doneBy].points+=t.points||1; scores[t.doneBy].count++; }
+  });
+  return scores;
+}
+
+function renderTaskPage() {
+  renderScoreboard();
+  renderTaskList();
+}
+
+function renderScoreboard() {
+  const scores = getScores();
+  const maxPts = Math.max(...Object.values(scores).map(s=>s.points));
+  document.getElementById('scoreboard').innerHTML = USERS.map(u => {
+    const s = scores[u.user];
+    const isWinner = maxPts > 0 && s.points === maxPts;
+    return `<div class="score-card ${isWinner?'winner':''}">
+      ${isWinner ? '<div class="winner-badge">🏆</div>' : ''}
+      <div class="score-avatar">${u.avatar}</div>
+      <div class="score-name">${u.user}</div>
+      <div class="score-pts">${s.points}</div>
+      <div class="score-label">Punkte diese Woche</div>
+      <div class="score-tasks">${s.count} Aufgabe${s.count!==1?'n':''} erledigt</div>
+    </div>`;
+  }).join('');
+  document.getElementById('tasks-subtitle').textContent = `KW ${getWeekId().split('-W')[1]} · ${tasks.filter(t=>t.weekId===getWeekId()&&!t.done).length} offen`;
+}
+
+function renderTaskList() {
+  const weekTasks = tasks.filter(t=>t.weekId===getWeekId());
+  let filtered = weekTasks;
+  if(taskTab==='offen') filtered = weekTasks.filter(t=>!t.done);
+  if(taskTab==='erledigt') filtered = weekTasks.filter(t=>t.done);
+  filtered.sort((a,b)=>(a.done===b.done)?a.createdAt-b.createdAt:(a.done?1:-1));
+
+  const el = document.getElementById('task-list');
+  if(!filtered.length){
+    const msgs = {offen:'Alle Aufgaben erledigt! 🎉', erledigt:'Noch nichts erledigt.', alle:'Noch keine Aufgaben. Füge eine hinzu!'};
+    el.innerHTML=`<div class="empty-state"><i class="ti ti-checkup-list"></i><p>${msgs[taskTab]||''}</p></div>`;
+    return;
+  }
+
+  el.innerHTML = filtered.map(t => {
+    const doneClass = t.done ? 'done' : '';
+    const doneByStr = t.done && t.doneBy ? `✓ ${t.doneBy}` : '';
+    return `<div class="task-item">
+      <button class="task-check-btn ${t.done?'done':''}" id="taskbtn-${t.id}" onclick="toggleTask('${t.id}')">
+        ${t.done?'<i class="ti ti-check" style="font-size:14px"></i>':''}
+      </button>
+      <div class="task-info">
+        <div class="task-title ${doneClass}">${t.title}</div>
+        <div class="task-meta">
+          <span class="task-badge ${t.repeat}">${t.repeat}</span>
+          ${t.desc?`<span style="font-size:11px;color:var(--text-muted)">${t.desc}</span>`:''}
+          ${doneByStr?`<span class="task-done-by">${doneByStr}</span>`:''}
+        </div>
+      </div>
+      <div class="task-pts">+${t.points||1}P</div>
+      <button class="task-del-btn" onclick="deleteTask('${t.id}')"><i class="ti ti-trash"></i></button>
+    </div>`;
+  }).join('') + `<div class="week-reset-row"><button class="week-reset-btn" onclick="resetWeek()">↺ Woche zurücksetzen</button></div>`;
+}
+
+
+// ── REMINDER BANNER ───────────────────────────────────────
+function checkReminder() {
+  const banner = document.getElementById('reminder-banner');
+  if(!banner || !currentUser) return;
+  const key = `reminder_${currentUser.user}_${new Date().toDateString()}`;
+  if(sessionStorage.getItem(key)) return;
+  const open = tasks.filter(t => t.weekId === getWeekId() && !t.done);
+  if(open.length === 0) return;
+  const dailyOpen = open.filter(t => t.repeat === 'täglich');
+  const totalPts = open.reduce((s,t) => s+(t.points||1), 0);
+  document.getElementById('reminder-text').textContent =
+    `Hey ${currentUser.user}! Du hast ${open.length} offene Aufgabe${open.length!==1?'n':''} 📋`;
+  document.getElementById('reminder-sub').textContent =
+    `${dailyOpen.length > 0 ? dailyOpen.length + ' täglich · ' : ''}${totalPts} Punkt${totalPts!==1?'e':''} zu holen`;
+  banner.style.display = 'flex';
+  document.getElementById('app').style.paddingTop = '52px';
+  sessionStorage.setItem(key, '1');
+}
+window.dismissReminder = function() {
+  closeReminder();
+  showPage('tasks');
+};
+window.closeReminder = function() {
+  const banner = document.getElementById('reminder-banner');
+  if(banner) banner.style.display = 'none';
+  document.getElementById('app').style.paddingTop = '';
+};
 
 window.openEditModal = function(id) {
   const r = recipes.find(x=>x.id===id);
