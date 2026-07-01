@@ -192,7 +192,7 @@
 </head>
 <body>
 
-<!-- ══ LOGIN ══════════════════════════════════════════════ -->
+<!-- ══ LOGIN ── -->
 <div id="login-screen">
   <div class="login-logo">🍽️</div>
   <div class="login-title">Rezeptbibliothek</div>
@@ -214,7 +214,7 @@
   </div>
 </div>
 
-<!-- ══ APP ════════════════════════════════════════════════ -->
+<!-- ══ APP ── -->
 <div id="app">
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('library')" id="nav-library"><i class="ti ti-book-2"></i>Bibliothek</button>
@@ -317,7 +317,7 @@
             <input class="form-input" id="recipe-url" type="url" placeholder="https://www.chefkoch.de/...">
           </div>
           <div id="import-status"></div>
-          <button class="btn btn-primary" onclick="importFromUrl()"><i class="ti ti-wand"></i> Mit KI importieren</button>
+          <button class="btn btn-primary" onclick="importFromUrl()"><i class="ti ti-wand"></i> Rezept kostenlos auslesen</button>
         </div>
         <div id="tab-manual" style="display:none">
           <div class="form-group"><label class="form-label">Rezeptname</label><input class="form-input" id="m-name" type="text" placeholder="Spaghetti Carbonara"></div>
@@ -386,11 +386,10 @@
   </div>
 </div><!-- /app -->
 
-<!-- ══ SCRIPTS ════════════════════════════════════════════ -->
+<!-- ══ SCRIPTS ── -->
 <script>
 // ── PROXY URL – nach Vercel-Deploy hier eintragen ─────────
 window.PROXY_URL = 'https://recipe-master-nine.vercel.app/api/claude';
-// e.g. 'https://rezept-proxy.vercel.app/api/claude'
 
 // ── LOGIN ─────────────────────────────────────────────────
 const CREDENTIALS = { user: 'admin', pass: 'Rezepte123' };
@@ -428,7 +427,6 @@ window.doLogin = doLogin;
 window.doLogout = doLogout;
 window.togglePw = togglePw;
 
-// Auto-login if session active
 if(checkSession()) {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
@@ -477,7 +475,6 @@ window.initApp = function() {
   renderShoppingList();
 };
 
-// auto-init if session already active on load
 if(sessionStorage.getItem('rm_session')==='ok') window.initApp();
 
 function setSyncStatus(s,l) {
@@ -513,10 +510,8 @@ window.showDetail = function(id, fromHistory) {
 };
 window.goBack=()=>{ history.back(); };
 
-// Handle Android back gesture / browser back button
 window.addEventListener('popstate', (e) => {
   const state = e.state;
-  // Close any open modal first
   const openModal = document.querySelector('.modal-overlay.open');
   if(openModal && (!state || state.view !== 'modal')){
     openModal.classList.remove('open');
@@ -526,7 +521,7 @@ window.addEventListener('popstate', (e) => {
     showPage('library', true);
     return;
   }
-  if(state.view === 'modal') return; // modal already shown, nothing else to do
+  if(state.view === 'modal') return;
   if(state.view === 'detail' && state.id){
     previousPage = state.from || 'library';
     showDetail(state.id, true);
@@ -534,7 +529,6 @@ window.addEventListener('popstate', (e) => {
     showPage(state.view || 'library', true);
   }
 });
-// Set initial history state
 if(!history.state) history.replaceState({view:'library'}, '', '#library');
 
 function renderDetail(r) {
@@ -554,7 +548,7 @@ function renderDetail(r) {
         ${r.time?`<span class="badge" style="background:var(--surface2);color:var(--text-secondary)">⏱ ${r.time}</span>`:''}
         ${r.servings?`<span class="badge" style="background:var(--surface2);color:var(--text-secondary)">👥 ${r.servings} Portionen</span>`:''}
       </div>
-      ${r.source?`<div style="margin-top:10px"><a href="${r.source}" style="color:var(--accent);font-size:13px">Originalrezept öffnen ↗</a></div>`:''}
+      ${r.source?`<div style="margin-top:10px"><a href="${r.source}" style="color:var(--accent);font-size:13px" target="_blank">Originalrezept öffnen ↗</a></div>`:''}
     </div>
     ${r.description?`<div class="detail-body"><div class="detail-section"><div class="detail-section-title">Beschreibung</div><p class="detail-text">${r.description}</p></div></div>`:''}
     <div class="detail-body">
@@ -599,7 +593,7 @@ function renderLibrary(){
   if(sortMode==='az') filtered.sort((a,b)=>(a.name||'').localeCompare(b.name||'','de'));
   else if(sortMode==='za') filtered.sort((a,b)=>(b.name||'').localeCompare(a.name||'','de'));
   else if(sortMode==='oldest') filtered.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
-  else filtered.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)); // newest default
+  else filtered.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
 
   document.getElementById('recipe-count').textContent=`${recipes.length} Rezept${recipes.length!==1?'e':''}`;
   const grid=document.getElementById('recipe-grid');
@@ -686,25 +680,52 @@ window.saveManual=async function(){
     closeModal('add-modal'); ['m-name','m-desc','m-steps','m-time','m-servings'].forEach(id=>document.getElementById(id).value=''); currentIngredients=[];
   }catch(e){setSyncStatus('error','Fehler');alert('Speichern fehlgeschlagen.');}
 };
-window.importFromUrl=async function(){
-  const url=document.getElementById('recipe-url').value.trim(); if(!url){alert('Bitte eine URL eingeben.');return;}
-  const statusDiv=document.getElementById('import-status');
-  statusDiv.innerHTML='<div class="loading-bar"></div><div class="status-msg">Rezept wird analysiert…</div>';
-  try{
-    const proxyUrl=window.PROXY_URL||'DEINE_VERCEL_URL/api/claude';
-    const response=await fetch(proxyUrl,{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,tools:[{type:'web_search_20250305',name:'web_search'}],messages:[{role:'user',content:`Rufe die Rezeptseite unter dieser URL ab: ${url}\n\nAntworte NUR mit JSON:\n{"name":"...","category":"vegan|vegetarisch|fleisch|suess","description":"...","ingredients":["..."],"steps":["..."],"time":"...","servings":"...","emoji":"..."}\n\nKategorien: vegan=keine tierischen Produkte, vegetarisch=kein Fleisch/Fisch, fleisch=Fleisch/Fisch, suess=Desserts/Kuchen/Nachspeisen. Nur JSON, kein Markdown.`}]})
+
+// ── KOSTENLOSER WEBSITE-IMPORT ÜBER BACKEND-SCRAPER ──
+window.importFromUrl = async function() {
+  const url = document.getElementById('recipe-url').value.trim();
+  if(!url){ alert('Bitte eine URL eingeben.'); return; }
+  
+  const statusDiv = document.getElementById('import-status');
+  statusDiv.innerHTML = '<div class="loading-bar"></div><div class="status-msg">Website wird ausgelesen…</div>';
+  
+  try {
+    const proxyUrl = window.PROXY_URL || 'https://recipe-master-nine.vercel.app/api/claude';
+    
+    const response = await fetch(proxyUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: url })
     });
-    const data=await response.json();
-    const text=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
-    const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
-    if(!parsed.name||!parsed.category) throw new Error('Ungültiges Format');
-    setSyncStatus('syncing','Wird gespeichert…');
-    await addDoc(collection(db,'recipes'),{name:parsed.name,category:parsed.category,description:parsed.description||'',ingredients:parsed.ingredients||[],steps:parsed.steps||[],time:parsed.time||'',servings:parsed.servings||'',emoji:parsed.emoji||CATS[parsed.category]?.emoji||'🍽️',source:url,createdAt:Date.now()});
-    statusDiv.innerHTML='<div class="status-msg success">✓ Rezept erfolgreich importiert!</div>';
-    setTimeout(()=>{closeModal('add-modal');document.getElementById('recipe-url').value='';},1200);
-  }catch(e){console.error(e);statusDiv.innerHTML='<div class="status-msg error">⚠ Import fehlgeschlagen. URL prüfen oder manuell eingeben.</div>';}
+    
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error || `Server-Fehler (${response.status})`);
+    }
+    
+    const parsed = await response.json();
+    
+    setSyncStatus('syncing', 'Wird gespeichert…');
+    
+    await addDoc(collection(db, 'recipes'), {
+      name: parsed.name || 'Unbekanntes Rezept',
+      category: parsed.category || 'fleisch',
+      description: parsed.description || '',
+      ingredients: parsed.ingredients || [],
+      steps: parsed.steps || [],
+      time: parsed.time || '',
+      servings: parsed.servings || '',
+      emoji: parsed.emoji || CATS[parsed.category]?.emoji || '🍽️',
+      source: url,
+      createdAt: Date.now()
+    });
+    
+    statusDiv.innerHTML = '<div class="status-msg success">✓ Rezept erfolgreich ausgelesen!</div>';
+    setTimeout(() => { closeModal('add-modal'); document.getElementById('recipe-url').value = ''; }, 1200);
+  } catch(e) {
+    console.error(e);
+    statusDiv.innerHTML = `<div class="status-msg error">⚠ Fehler: ${e.message}</div>`;
+  }
 };
 
 window.debugProxy = async function() {
